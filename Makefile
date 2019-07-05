@@ -15,6 +15,7 @@ NAME = nibbler
 SRC_PATH = ./src/
 OBJ_PATH = ./obj/
 INC_PATH = ./includes/
+GLAD_PATH = ./glad/
 
 SRC_FILE = main.cpp
 
@@ -26,11 +27,13 @@ OBJ = $(addprefix $(OBJ_PATH), $(OBJ_FILE))
 CCFLAGS = -Wall -Wextra -Werror
 CSTD = -std=c++17
 CC = clang++ $(CSTD) $(CCFLAGS)
+GLFW = -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
+GLFW_INC = ./glfw/src/libglfw3.a
 
 all: $(NAME) 
 
 $(NAME): $(SRC_PATH) $(OBJ_PATH) $(INC_PATH) $(OBJ)
-	$(CC) -o $@ $(OBJ)
+	$(CC) -o $@ $(OBJ) glad.o $(GLFW_INC) $(GLFW)
 
 $(OBJ_PATH)%.o: $(SRC_PATH)%.cpp
 	$(CC) -I$(INC_PATH) -o $@ -c $<
