@@ -6,7 +6,7 @@
 /*   By: ppreez <ppreez@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/07/05 11:24:19 by ppreez            #+#    #+#             */
-/*   Updated: 2019/07/12 15:18:08 by ppreez           ###   ########.fr       */
+/*   Updated: 2019/07/12 16:26:05 by ppreez           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,12 +19,46 @@
 #include "../includes/Shader.hpp"
 #include <iostream>
 
+float mixvalue = 0.2f;
+float xOffset = 0.0f;
+float yOffset = 0.0f;
+
 static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
     (void)scancode;
     (void)mods;
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
+    else if (key == GLFW_KEY_UP && action == GLFW_PRESS)
+    {
+        if (yOffset < 0.5)
+            yOffset += 0.1;
+    }
+    else if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
+    {
+        if (yOffset > -0.5)
+            yOffset -= 0.1;
+    }
+    else if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
+    {
+        if (xOffset > -0.5)
+            xOffset -= 0.1;
+    }
+    else if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
+    {
+        if (xOffset < 0.5)
+            xOffset += 0.1;
+    }
+    else if (key == GLFW_KEY_A && action == GLFW_PRESS)
+    {
+        if (mixvalue < 1.0)
+            mixvalue += 0.1;
+    }
+    else if (key == GLFW_KEY_Z && action == GLFW_PRESS)
+    {
+        if (mixvalue > 0.1)
+            mixvalue -= 0.1;
+    }
 }
 
 static void error_callback(int error, const char* description)
@@ -110,11 +144,30 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-    unsigned char *data = stbi_load("container.jpg", &width, &height, &nrChannels, 0);
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char *data = stbi_load("wall.jpg", &width, &height, &nrChannels, 0);
     if (data)
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+        std::cout << "Texture loading failed." << std::endl;
+    stbi_image_free(data);
+
+    unsigned int texture1;
+    glGenTextures(1, &texture1);
+    glBindTexture(GL_TEXTURE_2D, texture1);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    data = stbi_load("awesomeface.png", &width, &height, &nrChannels, 0);
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
     }
     else
@@ -125,6 +178,9 @@ int main()
     // float yOffset = 0.3f;
     // float zOffset = 0.0f;
 
+    ourShader.use();
+    ourShader.setInt("ourTexture2", 1);
+    ourShader.setFloat("alpha", 0.4);
     while (!glfwWindowShouldClose(window))
     {
         
@@ -132,8 +188,15 @@ int main()
             // ourShader.setFloat("yOffset", yOffset -= 0.1f);        
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        ourShader.use();
+
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture1);
+        ourShader.use();
+        ourShader.setFloat("alpha", mixvalue);
+        ourShader.setFloat("xOffset", xOffset);
+        ourShader.setFloat("yOffset", yOffset);
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glfwSwapBuffers(window);
