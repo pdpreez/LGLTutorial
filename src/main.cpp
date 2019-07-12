@@ -6,9 +6,12 @@
 /*   By: ppreez <ppreez@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/07/05 11:24:19 by ppreez            #+#    #+#             */
-/*   Updated: 2019/07/12 10:31:05 by ppreez           ###   ########.fr       */
+/*   Updated: 2019/07/12 11:17:45 by ppreez           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "../includes/stb_image.h"
 
 #include "../glad/include/KHR/khrplatform.h"
 #include "../glad/include/glad/glad.h"
@@ -57,16 +60,50 @@ int main()
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     glfwSetKeyCallback(window, key_callback);
     
-    int width, height;
+    int width, height, nrChannels;
     glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height);
 
     float vertices[] = 
     {
-        -0.5f,  -0.5f, 0.0f,   1.0f, 0.0f, 0.0f,
-         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,
-         0.0f, 0.5f, 0.0f,   0.0f, 0.0f, 1.0f
+         0.5f,   0.5f, 0.0f,    1.0f, 0.0f, 0.0f,   1.0f, 1.0f,
+         0.5f,  -0.5f, 0.0f,    0.0f, 1.0f, 0.0f,   1.0f, 0.0f,
+        -0.5f,  -0.5f, 0.0f,    0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+        -0.5f,   0.0f, 0.0f,    1.0f, 1.0f, 0.0f,   0.0f, 1.0f
     };
+
+    float tx_coord[] = 
+    {
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        0.5f, 1.0f
+    };
+    
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    
+    unsigned char *data = stbi_load("container.jpg", &width, &height, &nrChannels, 0);
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cout << "Texture loading failed." << std::endl;
+    }
+    
+    
+    stbi_image_free(data);
+
+
 
     Shader ourShader("./shaders/vertex.vs", "./shaders/fragment.fs");
 
@@ -84,15 +121,15 @@ int main()
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    float xOffset = 0.2f;
-    // float yOffset = -0.3f;
+    // float xOffset = 0.2f;
+    float yOffset = 0.3f;
     // float zOffset = 0.0f;
 
     while (!glfwWindowShouldClose(window))
     {
         
-        if (xOffset > -0.5)
-            ourShader.setFloat("xOffset", xOffset -= 0.1f);        
+        if (yOffset > -0.5)
+            ourShader.setFloat("yOffset", yOffset -= 0.1f);        
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         ourShader.use();
