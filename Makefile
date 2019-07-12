@@ -6,7 +6,7 @@
 #    By: ppreez <ppreez@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2019/06/03 13:36:13 by ppreez            #+#    #+#              #
-#    Updated: 2019/07/05 10:38:06 by ppreez           ###   ########.fr        #
+#    Updated: 2019/07/12 09:37:22 by ppreez           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,7 +17,7 @@ OBJ_PATH = ./obj/
 INC_PATH = ./includes/
 GLAD_PATH = ./glad/
 
-SRC_FILE = main.cpp
+SRC_FILE = main.cpp Shader.cpp
 
 OBJ_FILE = $(SRC_FILE:%.cpp=%.o)
 
@@ -33,7 +33,7 @@ GLFW_INC = ./glfw/src/libglfw3.a
 all: $(NAME) 
 
 $(NAME): $(SRC_PATH) $(OBJ_PATH) $(INC_PATH) $(OBJ)
-	$(CC) -o $@ $(OBJ) glad.o $(GLFW_INC) $(GLFW)
+	$(CC) -o $@ $(OBJ) obj/glad.o $(GLFW_INC) $(GLFW)
 
 $(OBJ_PATH)%.o: $(SRC_PATH)%.cpp
 	$(CC) -I$(INC_PATH) -o $@ -c $<
