@@ -6,7 +6,7 @@
 /*   By: ppreez <ppreez@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/07/05 11:24:19 by ppreez            #+#    #+#             */
-/*   Updated: 2019/07/13 15:16:43 by ppreez           ###   ########.fr       */
+/*   Updated: 2019/07/13 16:33:30 by ppreez           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include "../glad/include/glad/glad.h"
 #include "../glfw/include/GLFW/glfw3.h"
 #include "../includes/Shader.hpp"
+#include "../includes/Camera.hpp"
 #include "../includes/glm/glm.hpp"
 #include "../includes/glm/gtc/matrix_transform.hpp"
 #include "../includes/glm/gtc/type_ptr.hpp"
@@ -32,93 +33,49 @@ float lastFrame = 0.0f;
 
 float lastX = SCR_WIDTH / 2;
 float lastY = SCR_HEIGHT / 2;
-float pitch = 0.0f;
-float yaw = -90.0f;
-float fov = 45.0f;
 
-bool mouseInit = false;
 
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+Camera camera;
+
+bool firstMouseMove = true;
 
 void process_input(GLFWwindow *window)
 {
-    float cameraSpeed = 0.002f * deltaTime;
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-    {
-        if (mixvalue + cameraSpeed > 1.0)
-            mixvalue = 1.0;
-        else
-            mixvalue += cameraSpeed;
-    }
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-    {
-        if (mixvalue - cameraSpeed < 0.0)
-            mixvalue = 0.0;
-        else
-            mixvalue -= cameraSpeed;
-    }
-    
+        glfwSetWindowShouldClose(window, true);
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        cameraPos -= cameraSpeed * cameraFront;
+        camera.processKeyboardInput(FORWARD, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        cameraPos += cameraSpeed * cameraFront;
+        camera.processKeyboardInput(BACKWARD, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        camera.processKeyboardInput(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-        cameraPos -= cameraSpeed * cameraUp;
-    if (glfwGetKey(window, GLFW_KEY_F)== GLFW_PRESS)
-        cameraPos += cameraSpeed * cameraUp;
+        camera.processKeyboardInput(RIGHT, deltaTime);    
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
 {
-    if (mouseInit == false)
+    (void)window;
+    if (firstMouseMove)
     {
         lastX = xpos;
         lastY = ypos;
-        mouseInit = true;
+        firstMouseMove = false;
     }
-
-    (void)window;
     float xOffset = xpos - lastX;
     float yOffset = lastY - ypos;
+
     lastX = xpos;
     lastY = ypos;
-    
-    float sensitivity = 0.05f;
-    xOffset *= sensitivity;
-    yOffset *= sensitivity;
-    
-    pitch += yOffset;
-    if (pitch > 89.0f)
-        pitch = 89.0f;
-    else if (pitch < -89.0f)
-        pitch = -89.0f;
-    yaw += xOffset;
 
-    glm::vec3 front;
-    front.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
-    front.y = sin(glm::radians(pitch));
-    front.z = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
-    cameraFront = glm::normalize(front);
+    camera.processMouseMovement(xOffset, yOffset, true);
 }
 
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 {
     (void)window;
     (void)xoffset;
-    if (fov > 0.9f && fov < 45.1f )
-        fov -= yoffset;
-    if (fov < 1.0f)
-        fov = 1.0f;
-    if (fov > 45.0f)
-        fov = 45.0f;
+    camera.processMouseScroll(yoffset);
 }
 
 static void error_callback(int error, const char* description)
@@ -294,10 +251,6 @@ glm::vec3 cubePositions[] = {
         std::cout << "Texture loading failed." << std::endl;
     stbi_image_free(data);
 
-    // float xOffset = 0.2f;
-    // float yOffset = 0.3f;
-    // float zOffset = 0.0f;
-    
     ourShader.use();
     ourShader.setInt("ourTexture2", 1);
     ourShader.setFloat("alpha", 0.4);
@@ -310,8 +263,6 @@ glm::vec3 cubePositions[] = {
         
         process_input(window);
 
-        // if (yOffset > -0.5)
-            // ourShader.setFloat("yOffset", yOffset -= 0.1f);        
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -323,20 +274,9 @@ glm::vec3 cubePositions[] = {
         ourShader.use();
         glBindVertexArray(VAO);
         
-        // glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, -3.0f);
-        // glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
-        // glm::vec3 cameraDirection = glm::normalize(cameraPos - cameraTarget);
-        // glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-        // glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraDirection));
-        // glm::vec3 cameraUp = glm::cross(cameraDirection, cameraDirection);
-        
-        glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        glm::mat4 view = camera.getViewMatrix();
                                 
-        glm::mat4 proj = glm::mat4(1.0f);
-        // glm::mat4 view = glm::mat4(1.0f);
-
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, 0.0f));
-        proj = glm::perspective(glm::radians(fov), ((float)SCR_WIDTH / (float)SCR_HEIGHT), 0.1f, 100.0f);
+        glm::mat4 proj = glm::perspective(glm::radians(camera.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
         ourShader.setMat4("view", view);
         ourShader.setMat4("proj", proj);
@@ -354,16 +294,8 @@ glm::vec3 cubePositions[] = {
             glDrawArrays(GL_TRIANGLES, 0, 36);
 
         }
-
-        // glm::mat4 trans = glm::mat4(1.0f);
-        // trans = glm::translate(trans, glm::vec3(xOffset, yOffset, 0.0f));
-        // trans = glm::rotate(trans, glm::radians(zRotate), glm::vec3(0.0, 0.0, 1.0));
-        // trans = glm::scale(trans, glm::vec3(scale, scale, scale));
         
-        // glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
         ourShader.setFloat("alpha", mixvalue);
-        // ourShader.setFloat("xOffset", xOffset);
-        // ourShader.setFloat("yOffset", yOffset);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
