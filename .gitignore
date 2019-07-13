@@ -1,3 +1,4 @@
 ./glfw/
+./includes/glm/
 .DS_STORE
 .vs_code
