@@ -6,7 +6,7 @@
 /*   By: ppreez <ppreez@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/07/13 15:29:32 by ppreez            #+#    #+#             */
-/*   Updated: 2019/07/13 16:34:03 by ppreez           ###   ########.fr       */
+/*   Updated: 2019/07/14 10:27:19 by ppreez           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,36 +56,34 @@ void Camera::processKeyboardInput(Camera_Movement direction, float deltaTime)
 {
     float vel = MovementSpeed * deltaTime;
     if (direction == FORWARD)
-        position += front * vel;
-    if (direction == BACKWARD)
         position -= front * vel;
+    if (direction == BACKWARD)
+        position += front * vel;
     if (direction == LEFT)
-        position -= right * vel;
-    if (direction == RIGHT)
         position += right * vel;
+    if (direction == RIGHT)
+        position -= right * vel;
     // position.y = 0.0f;
 }
 
-void Camera::processMouseMovement(float xOffset, float yOffset, GLboolean constriainPitch = true)
+void Camera::processMouseMovement(float xOffset, float yOffset)
 {
     xOffset *= MouseSensitivity;
     yOffset *= MouseSensitivity;
 
-    Yaw += xOffset;
-    Pitch += yOffset;
-    if (constriainPitch)
-    {
-        if (Pitch > 89.0f)
-            Pitch = 89.0f;
-        if (Pitch < -89.0f)
-            Pitch = -89.0f;
-    }
+    Yaw     += xOffset;
+    Pitch   += yOffset;
+    
+    if (Pitch > 89.0f)
+        Pitch = 89.0f;
+    if (Pitch < -89.0f)
+        Pitch = -89.0f;
     updateCameraVectors();
 }
 
 void Camera::processMouseScroll(float yOffset)
 {
-    if (Fov > 1.0f && Fov < 45.0f)
+    if (Fov >= 1.0f && Fov <= 45.0f)
         Fov -= yOffset;
     if (Fov < 1.0f)
         Fov = 1.0f;
@@ -96,12 +94,12 @@ void Camera::processMouseScroll(float yOffset)
 
 void Camera::updateCameraVectors()
 {
-    glm::vec3 front;
-    front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-    front.y = cos(glm::radians(Pitch));
-    front.z = cos(glm::radians(Pitch)) * sin(glm::radians(Yaw));
+    glm::vec3 f;
+    f.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
+    f.y = sin(glm::radians(Pitch));
+    f.z = sin(glm::radians(Yaw) * cos(glm::radians(Pitch)));
 
-    front = glm::normalize(front);
+    front = glm::normalize(f);
     right = glm::normalize(glm::cross(front, worldUp));
     up = glm::normalize(glm::cross(right, front));
 }

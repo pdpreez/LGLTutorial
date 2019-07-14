@@ -6,7 +6,7 @@
 /*   By: ppreez <ppreez@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/07/05 11:24:19 by ppreez            #+#    #+#             */
-/*   Updated: 2019/07/13 16:33:30 by ppreez           ###   ########.fr       */
+/*   Updated: 2019/07/14 10:31:16 by ppreez           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,11 +31,11 @@ float mixvalue = 0.2f;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-float lastX = SCR_WIDTH / 2;
-float lastY = SCR_HEIGHT / 2;
+float lastX = SCR_WIDTH / 2.0f;
+float lastY = SCR_HEIGHT / 2.0f;
 
 
-Camera camera;
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 bool firstMouseMove = true;
 
@@ -43,14 +43,20 @@ void process_input(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
         camera.processKeyboardInput(FORWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
         camera.processKeyboardInput(BACKWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
         camera.processKeyboardInput(LEFT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
         camera.processKeyboardInput(RIGHT, deltaTime);    
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        if (mixvalue < 1.0)
+            mixvalue += 0.001;
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+        if (mixvalue > -0.0)
+            mixvalue -= 0.001;
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
@@ -68,7 +74,7 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos)
     lastX = xpos;
     lastY = ypos;
 
-    camera.processMouseMovement(xOffset, yOffset, true);
+    camera.processMouseMovement(xOffset, yOffset);
 }
 
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
@@ -272,15 +278,14 @@ glm::vec3 cubePositions[] = {
         glBindTexture(GL_TEXTURE_2D, texture1);
         
         ourShader.use();
-        glBindVertexArray(VAO);
-        
-        glm::mat4 view = camera.getViewMatrix();
-                                
+        // glBindVertexArray(VAO);
         glm::mat4 proj = glm::perspective(glm::radians(camera.Fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-
-        ourShader.setMat4("view", view);
         ourShader.setMat4("proj", proj);
 
+        glm::mat4 view = camera.getViewMatrix();
+        ourShader.setMat4("view", view);
+
+        glBindVertexArray(VAO);
         for (int i = 0 ; i < 10 ; i++)
         {
             glm::mat4 model = glm::mat4(1.0f);
@@ -291,10 +296,9 @@ glm::vec3 cubePositions[] = {
             else
                 model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
             ourShader.setMat4("model", model);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
 
+            glDrawArrays(GL_TRIANGLES, 0, 36);
         }
-        
         ourShader.setFloat("alpha", mixvalue);
         glfwSwapBuffers(window);
         glfwPollEvents();
